@@ -4,29 +4,76 @@
 This is the User Management Script
 comment
 
-function giveUsername(){
-	read -p "Enter Username: " username
+read -p "Enter Username: " user
 
-	if [[ ! $username ]]; then
-		echo "username can't be empty. please provide the username"
-		giveUsername
-	else
-		createUser
-	fi
-}
 
 function createUser(){
 
-	if  grep -q $username /etc/passwd ; then
-		echo "Username alredy exists. please try again"
-	        giveUsername
-	else
-		sudo useradd -m $username
-		echo "user created succssfully. please provide password for user"
-		sudo passwd $username
-		echo "user password created succssfully"
-	fi
+        if grep -q ${user} /etc/passwd ; then
+                echo "$user is already exists"
+                return 1
+        fi
+
+        sudo useradd -m "$user"
+        sudo passwd $user
+
+        if [ $? -eq 0 ]; then
+                echo "User Created Successfully"
+        else
+                echo "Some exception error"
+        fi
 }
 
-giveUsername
-createUser
+function resetPassword(){
+
+        if grep -q ${user} /etc/passwd ; then
+                sudo passwd ${user}
+        fi
+
+        if [ $? -eq 0 ]; then
+                echo "password reset successfully"
+        else
+                echo "User doesn't exists. please create user first"
+        fi
+
+}
+
+function deleteUser(){
+
+        if grep -q ${user} /etc/passwd ; then
+                echo "Enter password for deletion user: "
+
+                su - "$user" -c "exit"
+
+                if [ $? -eq 0 ]; then
+                        sudo pkill -u "$user"
+
+                        sleep 5
+
+                        sudo userdel -r "$user"
+                        echo "User deleted successfully"
+                fi
+        else
+                echo "User doesn't exists. can't perform the delete operation"
+        fi
+
+}
+
+read -p "Enter Choice(1.User_Creation, 2.User_PasswordUpdation, 3.User_deletion): " choice
+
+
+case "$choice" in
+        1)
+                createUser
+                ;;
+        2)
+                resetPassword
+                ;;
+        3)
+                deleteUser
+                ;;
+        *)
+                echo "Invalid choice. please enter 1, 2 or 3"
+                ;;
+
+esac
